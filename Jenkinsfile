@@ -68,7 +68,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 dir('project') {
-                    sh "IMAGE_TAG=${IMAGE_TAG} docker compose up -d --remove-orphans"
+                    sh "IMAGE_TAG=${IMAGE_TAG} docker-compose up -d --remove-orphans"
                 }
             }
         }
