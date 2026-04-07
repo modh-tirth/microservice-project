@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    tools {
+        sonarQube 'SonarQube'
+    }
 
     environment {
         DOCKER_HUB_CREDS = credentials('dockerhub-creds')
