@@ -19,14 +19,14 @@ pipeline {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
                     dir('project') {
                         withSonarQubeEnv('SonarQube') {
-                            sh """
+                            sh '''
                                 sonar-scanner \
                                   -Dsonar.projectKey=microservices-notes-app \
                                   -Dsonar.sources=. \
                                   -Dsonar.exclusions=**/node_modules/** \
-                                  -Dsonar.host.url=${SONAR_HOST_URL} \
-                                  -Dsonar.token=${SONAR_TOKEN}
-                            """
+                                  -Dsonar.host.url=$SONAR_HOST_URL \
+                                  -Dsonar.token=$SONAR_TOKEN
+                            '''
                         }
                     }
                 }
