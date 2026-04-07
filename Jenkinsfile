@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        SONAR_TOKEN    = credentials('sonar-token')
         SONAR_HOST_URL = 'http://localhost:9000'
         IMAGE_TAG      = "${BUILD_NUMBER}"
     }
@@ -17,16 +16,18 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                dir('project') {
-                    withSonarQubeEnv('SonarQube') {
-                        sh """
-                            sonar-scanner \
-                              -Dsonar.projectKey=microservices-notes-app \
-                              -Dsonar.sources=. \
-                              -Dsonar.exclusions=**/node_modules/** \
-                              -Dsonar.host.url=${SONAR_HOST_URL} \
-                              -Dsonar.token=${SONAR_TOKEN}
-                        """
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    dir('project') {
+                        withSonarQubeEnv('SonarQube') {
+                            sh """
+                                sonar-scanner \
+                                  -Dsonar.projectKey=microservices-notes-app \
+                                  -Dsonar.sources=. \
+                                  -Dsonar.exclusions=**/node_modules/** \
+                                  -Dsonar.host.url=${SONAR_HOST_URL} \
+                                  -Dsonar.token=${SONAR_TOKEN}
+                            """
+                        }
                     }
                 }
             }
