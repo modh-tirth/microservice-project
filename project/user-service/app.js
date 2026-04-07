@@ -1,6 +1,7 @@
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
+const bcrypt = require("bcryptjs");
 
 const app = express();
 app.use(express.json());
@@ -17,7 +18,8 @@ db.connect();
 
 app.post("/register", (req, res) => {
   const { username, password } = req.body;
-  db.query("INSERT INTO users (username, password) VALUES (?, ?)", [username, password], (err) => {
+  const hash = bcrypt.hashSync(password, 10);
+  db.query("INSERT INTO users (username, password) VALUES (?, ?)", [username, hash], (err) => {
     if (err) return res.status(500).send(err);
     res.send("User created");
   });
@@ -25,9 +27,10 @@ app.post("/register", (req, res) => {
 
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  db.query("SELECT * FROM users WHERE username=? AND password=?", [username, password], (err, results) => {
+  db.query("SELECT * FROM users WHERE username=?", [username], (err, results) => {
     if (err) return res.status(500).send(err);
     if (results.length === 0) return res.status(401).send("Invalid");
+    if (!bcrypt.compareSync(password, results[0].password)) return res.status(401).send("Invalid");
     res.json({ userId: results[0].id });
   });
 });
