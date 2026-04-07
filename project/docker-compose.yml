@@ -17,7 +17,7 @@ services:
       retries: 5
 
   user-service:
-    image: ${DOCKER_HUB_USER}/user-service:${IMAGE_TAG:-latest}
+    image: user-service:${IMAGE_TAG:-latest}
     environment:
       DB_HOST: mysql
       DB_USER: root
@@ -29,7 +29,7 @@ services:
       - app-net
 
   notes-service:
-    image: ${DOCKER_HUB_USER}/notes-service:${IMAGE_TAG:-latest}
+    image: notes-service:${IMAGE_TAG:-latest}
     environment:
       DB_HOST: mysql
       DB_USER: root
@@ -41,7 +41,7 @@ services:
       - app-net
 
   api-gateway:
-    image: ${DOCKER_HUB_USER}/api-gateway:${IMAGE_TAG:-latest}
+    image: api-gateway:${IMAGE_TAG:-latest}
     ports:
       - "3000:3000"
     environment:
@@ -54,7 +54,7 @@ services:
       - app-net
 
   frontend:
-    image: ${DOCKER_HUB_USER}/frontend:${IMAGE_TAG:-latest}
+    image: frontend:${IMAGE_TAG:-latest}
     ports:
       - "80:80"
     networks:

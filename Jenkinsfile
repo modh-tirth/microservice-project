@@ -1,17 +1,10 @@
 pipeline {
     agent any
-    tools {
-        sonarQube 'SonarQube'
-    }
 
     environment {
-        DOCKER_HUB_CREDS = credentials('dockerhub-creds')
-        DOCKER_HUB_USER  = "${DOCKER_HUB_CREDS_USR}"
-        EC2_HOST         = credentials('ec2-host')          // e.g. ubuntu@<EC2-IP>
-        SSH_KEY          = credentials('ec2-ssh-key')       // SSH private key
-        SONAR_TOKEN      = credentials('sonar-token')
-        SONAR_HOST_URL   = 'http://localhost:9000'          // update if SonarQube is on separate host
-        IMAGE_TAG        = "${BUILD_NUMBER}"
+        SONAR_TOKEN    = credentials('sonar-token')
+        SONAR_HOST_URL = 'http://localhost:9000'
+        IMAGE_TAG      = "${BUILD_NUMBER}"
     }
 
     stages {
@@ -51,10 +44,10 @@ pipeline {
             steps {
                 dir('project') {
                     sh """
-                        docker build -t ${DOCKER_HUB_USER}/api-gateway:${IMAGE_TAG}    ./api-gateway
-                        docker build -t ${DOCKER_HUB_USER}/user-service:${IMAGE_TAG}   ./user-service
-                        docker build -t ${DOCKER_HUB_USER}/notes-service:${IMAGE_TAG}  ./notes-service
-                        docker build -t ${DOCKER_HUB_USER}/frontend:${IMAGE_TAG}       ./frontend
+                        docker build -t api-gateway:${IMAGE_TAG}   ./api-gateway
+                        docker build -t user-service:${IMAGE_TAG}  ./user-service
+                        docker build -t notes-service:${IMAGE_TAG} ./notes-service
+                        docker build -t frontend:${IMAGE_TAG}      ./frontend
                     """
                 }
             }
@@ -63,44 +56,19 @@ pipeline {
         stage('Trivy Security Scan') {
             steps {
                 sh """
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL \
-                        --no-progress ${DOCKER_HUB_USER}/api-gateway:${IMAGE_TAG}
-
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL \
-                        --no-progress ${DOCKER_HUB_USER}/user-service:${IMAGE_TAG}
-
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL \
-                        --no-progress ${DOCKER_HUB_USER}/notes-service:${IMAGE_TAG}
-
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL \
-                        --no-progress ${DOCKER_HUB_USER}/frontend:${IMAGE_TAG}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress api-gateway:${IMAGE_TAG}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress user-service:${IMAGE_TAG}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress notes-service:${IMAGE_TAG}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress frontend:${IMAGE_TAG}
                 """
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Deploy') {
             steps {
-                sh "echo ${DOCKER_HUB_CREDS_PSW} | docker login -u ${DOCKER_HUB_USER} --password-stdin"
-                sh """
-                    docker push ${DOCKER_HUB_USER}/api-gateway:${IMAGE_TAG}
-                    docker push ${DOCKER_HUB_USER}/user-service:${IMAGE_TAG}
-                    docker push ${DOCKER_HUB_USER}/notes-service:${IMAGE_TAG}
-                    docker push ${DOCKER_HUB_USER}/frontend:${IMAGE_TAG}
-                """
-            }
-        }
-
-        stage('Deploy to EC2') {
-            steps {
-                sshagent(['ec2-ssh-key']) {
+                dir('project') {
                     sh """
-                        ssh -o StrictHostKeyChecking=no ${EC2_HOST} '
-                            cd /home/ubuntu/microservices_project/project &&
-                            export IMAGE_TAG=${IMAGE_TAG} &&
-                            export DOCKER_HUB_USER=${DOCKER_HUB_USER} &&
-                            docker compose pull &&
-                            docker compose up -d --remove-orphans
-                        '
+                        IMAGE_TAG=${IMAGE_TAG} docker compose up -d --remove-orphans
                     """
                 }
             }
@@ -109,7 +77,6 @@ pipeline {
 
     post {
         always {
-            sh "docker logout"
             cleanWs()
         }
         failure {
