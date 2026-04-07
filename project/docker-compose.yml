@@ -1,0 +1,67 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/users.sql:/docker-entrypoint-initdb.d/01_users.sql
+      - ./db/notes.sql:/docker-entrypoint-initdb.d/02_notes.sql
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+  user-service:
+    image: ${DOCKER_HUB_USER}/user-service:${IMAGE_TAG:-latest}
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASS: password
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  notes-service:
+    image: ${DOCKER_HUB_USER}/notes-service:${IMAGE_TAG:-latest}
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASS: password
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-net
+
+  api-gateway:
+    image: ${DOCKER_HUB_USER}/api-gateway:${IMAGE_TAG:-latest}
+    ports:
+      - "3000:3000"
+    environment:
+      USER_SERVICE: http://user-service:3001
+      NOTES_SERVICE: http://notes-service:3002
+    depends_on:
+      - user-service
+      - notes-service
+    networks:
+      - app-net
+
+  frontend:
+    image: ${DOCKER_HUB_USER}/frontend:${IMAGE_TAG:-latest}
+    ports:
+      - "80:80"
+    networks:
+      - app-net
+
+networks:
+  app-net:
+
+volumes:
+  mysql_data:
