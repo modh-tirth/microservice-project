@@ -57,20 +57,10 @@ pipeline {
         stage('Trivy Security Scan') {
             steps {
                 sh """
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress \
-                        --skip-files "/usr/local/lib/node_modules/npm" \
-                        api-gateway:${IMAGE_TAG}
-
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress \
-                        --skip-files "/usr/local/lib/node_modules/npm" \
-                        user-service:${IMAGE_TAG}
-
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress \
-                        --skip-files "/usr/local/lib/node_modules/npm" \
-                        notes-service:${IMAGE_TAG}
-
-                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress \
-                        frontend:${IMAGE_TAG}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress api-gateway:${IMAGE_TAG}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress user-service:${IMAGE_TAG}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress notes-service:${IMAGE_TAG}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress frontend:${IMAGE_TAG}
                 """
             }
         }
